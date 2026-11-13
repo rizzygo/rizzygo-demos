@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Encurtaí: painel</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .curto{font-weight:700;color:var(--azul);word-break:break-all}
+  .destino{color:var(--suave);word-break:break-all;font-size:.9rem}
+  .num{font-weight:800;font-size:1.1rem;text-align:right}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1>Encurtaí</h1><span class="selo">demo · R$ 0</span><p>Links curtos com Cloudflare Workers, KV e D1, no plano Free.</p></div></header>
+<main class="casca">
+  <section class="cartao">
+    <h2>Chave do painel</h2>
+    <div class="linha">
+      <div><label for="chave">CHAVE_ADMIN</label><input id="chave" type="password" autocomplete="off" placeholder="a mesma do .dev.vars ou do wrangler secret"></div>
+      <button type="button" id="entrar">Usar chave</button>
+    </div>
+  </section>
+  <section class="cartao">
+    <h2>Novo link</h2>
+    <form id="form">
+      <div class="linha">
+        <div><label for="url">Endereço longo</label><input id="url" type="url" required placeholder="https://..."></div>
+        <div><label for="slug">Nome curto (opcional)</label><input id="slug" pattern="[a-z0-9-]{3,40}" placeholder="meu-link"></div>
+        <button type="submit">Encurtar</button>
+      </div>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+  </section>
+  <section class="cartao">
+    <h2>Seus links</h2>
+    <table><thead><tr><th>Link curto</th><th>Destino</th><th style="text-align:right">Cliques</th></tr></thead>
+      <tbody id="lista"><tr><td colspan="3" class="vazio">Use a chave para ver os links.</td></tr></tbody></table>
+  </section>
+</main>
+<footer class="rodape">Demo do artigo <a href="https://rizzygo.com.br/projetos-free-tier-firebase-cloudflare">Dez projetos reais que custam zero real</a>, da Rizzygo.</footer>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let chave = sessionStorage.getItem("encurtai-chave") || "";
+  $("chave").value = chave;
+
+  async function api(metodo, corpo) {
+    const r = await fetch("/api/links", {
+      method: metodo,
+      headers: { "Authorization": "Bearer " + chave, "Content-Type": "application/json" },
+      body: corpo ? JSON.stringify(corpo) : undefined,
+    });
+    const dados = await r.json();
+    if (!r.ok) throw new Error(dados.erro || "Erro " + r.status);
+    return dados;
+  }
+
+  async function carregar() {
+    if (!chave) return;
+    try {
+      const { links } = await api("GET");
+      $("lista").innerHTML = links.length ? "" : '<tr><td colspan="3" class="vazio">Nenhum link ainda.</td></tr>';
+      for (const l of links) {
+        const tr = document.createElement("tr");
+        const curto = location.origin + "/" + l.slug;
+        tr.innerHTML = '<td><a class="curto"></a></td><td class="destino"></td><td class="num"></td>';
+        tr.querySelector("a").href = curto;
+        tr.querySelector("a").textContent = curto.replace(/^https?:\/\//, "");
+        tr.querySelector(".destino").textContent = l.url;
+        tr.querySelector(".num").textContent = l.cliques;
+        $("lista").append(tr);
+      }
+    } catch (e) {
+      $("lista").innerHTML = '<tr><td colspan="3" class="vazio"></td></tr>';
+      $("lista").querySelector("td").textContent = e.message;
+    }
+  }
+
+  $("entrar").onclick = () => { chave = $("chave").value.trim(); sessionStorage.setItem("encurtai-chave", chave); carregar(); };
+  $("form").onsubmit = async (ev) => {
+    ev.preventDefault();
+    $("msg").className = "msg";
+    try {
+      const novo = await api("POST", { url: $("url").value, slug: $("slug").value || undefined });
+      $("msg").textContent = "Pronto: " + location.origin + "/" + novo.slug;
+      $("msg").classList.add("ok");
+      $("form").reset();
+      carregar();
+    } catch (e) {
+      $("msg").textContent = e.message;
+      $("msg").classList.add("erro");
+    }
+  };
+  carregar();
+</script>
+</body>
+</html>

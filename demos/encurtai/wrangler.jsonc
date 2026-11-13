@@ -1,0 +1,11 @@
+// Configuração do Worker. Troque os dois "id" pelos que o wrangler mostrar ao criar o KV e o D1 (veja o README).
+{
+  "name": "encurtai",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "dev": { "port": 8787 },
+  // A pasta public/ vira o painel. O que não for arquivo dela cai no Worker (os links curtos).
+  "assets": { "directory": "./public" },
+  "kv_namespaces": [{ "binding": "LINKS", "id": "troque-pelo-id-do-kv" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "encurtai", "database_id": "troque-pelo-id-do-d1" }]
+}

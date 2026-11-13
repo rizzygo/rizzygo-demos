@@ -1,0 +1,10 @@
+{
+  "name": "sala-do-cafe",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "dev": { "port": 8790 },
+  "assets": { "directory": "./public" },
+  "durable_objects": { "bindings": [{ "name": "SALAS", "class_name": "Sala" }] },
+  // No plano Free, Durable Objects só existem com armazenamento em SQLite: por isso new_sqlite_classes.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Sala"] }]
+}

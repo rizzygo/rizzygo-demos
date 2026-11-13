@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mural Vivo</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .topo-mural{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+  #lista{display:grid;gap:.8rem}
+  @media (min-width:700px){#lista{grid-template-columns:1fr 1fr}}
+  .recado{background:var(--ambar-claro);border-radius:var(--raio);padding:.9rem 1rem;transform:rotate(-.4deg)}
+  .recado:nth-child(even){background:var(--azul-claro);transform:rotate(.4deg)}
+  .recado.meu{outline:2px solid var(--ambar)}
+  .recado header{display:flex;gap:.5rem;align-items:center}
+  .recado time{color:var(--suave);font-size:.85rem;margin-right:auto}
+  .recado header button{padding:.2rem .5rem;font-size:.8rem}
+  .recado p{margin:.4rem 0 0;white-space:pre-wrap;word-break:break-word}
+  .contador{color:var(--suave);font-size:.85rem;text-align:right}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1>Mural Vivo</h1><span class="selo">demo · R$ 0</span><p>Recados em tempo real com Firebase Authentication e Firestore, no plano Spark.</p></div></header>
+<main class="casca">
+  <section class="cartao" id="entrada" hidden>
+    <h2>Entre no mural da turma</h2>
+    <form id="form-entrar" class="linha">
+      <div><label for="apelido">Como quer aparecer?</label><input id="apelido" maxlength="40" placeholder="Seu apelido"></div>
+      <button type="submit">Entrar</button>
+    </form>
+  </section>
+  <div id="mural" hidden>
+    <section class="cartao">
+      <div class="topo-mural"><h2 style="margin:0">Olá, <span id="quem"></span></h2><button type="button" class="secundario" id="sair">Sair</button></div>
+      <form id="form-recado">
+        <label for="texto">Seu recado</label>
+        <textarea id="texto" maxlength="280" placeholder="Bom dia, turma!"></textarea>
+        <p class="contador" id="contador">0/280</p>
+        <button type="submit">Publicar no mural</button>
+        <p class="msg erro" id="erro" role="alert"></p>
+      </form>
+    </section>
+    <div id="lista"></div>
+  </div>
+</main>
+<footer class="rodape">Demo do artigo <a href="https://rizzygo.com.br/projetos-free-tier-firebase-cloudflare">Dez projetos reais que custam zero real</a>, da Rizzygo.</footer>
+<script type="module" src="/app.js"></script>
+</body>
+</html>

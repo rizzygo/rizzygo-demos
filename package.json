@@ -1,0 +1,11 @@
+{
+  "name": "rizzygo-demos",
+  "private": true,
+  "description": "Demos dos projetos do artigo Dez projetos reais que custam zero real (Firebase Spark + Cloudflare Free).",
+  "workspaces": ["demos/*"],
+  "scripts": {
+    "conferir": "node scripts/conferir.mjs",
+    "prints": "node scripts/prints.cjs"
+  },
+  "engines": { "node": ">=20" }
+}

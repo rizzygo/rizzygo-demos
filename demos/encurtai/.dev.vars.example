@@ -1,0 +1,2 @@
+# Copie para .dev.vars (o git ignora esse arquivo). Em produção, use: npx wrangler secret put CHAVE_ADMIN
+CHAVE_ADMIN=troque-esta-chave

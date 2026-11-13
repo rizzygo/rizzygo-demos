@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tá no Ar?: status</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .geral{display:flex;align-items:center;gap:.8rem;font-size:1.2rem;font-weight:800}
+  .bolinha{width:14px;height:14px;border-radius:50%;background:var(--verde);box-shadow:0 0 0 5px rgba(18,128,92,.18)}
+  .geral.falha .bolinha{background:var(--vermelho);box-shadow:0 0 0 5px rgba(194,59,59,.18)}
+  .site-cab{display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;align-items:baseline}
+  .site-cab h2{margin:0;word-break:break-all}
+  .numeros{color:var(--suave);font-size:.95rem}
+  .numeros b{color:var(--tinta)}
+  .barras{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;margin:.8rem 0 .3rem}
+  .barras span{height:34px;border-radius:4px;background:var(--verde)}
+  .barras .falha{background:var(--vermelho)}
+  .barras .sem-dado{background:var(--linha)}
+  .legenda{display:flex;justify-content:space-between;color:var(--suave);font-size:.8rem}
+  .status-ok{color:var(--verde);font-weight:700}.status-falha{color:var(--vermelho);font-weight:700}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1>Tá no Ar?</h1><span class="selo">demo · R$ 0</span><p>Página de status com Cron Trigger, Workers e D1, no plano Free da Cloudflare.</p></div></header>
+<main class="casca">
+  <section class="cartao"><div class="geral" id="geral"><span class="bolinha"></span><span id="geral-texto">Carregando...</span></div></section>
+  <div id="sites"></div>
+</main>
+<footer class="rodape">Demo do artigo <a href="https://rizzygo.com.br/projetos-free-tier-firebase-cloudflare">Dez projetos reais que custam zero real</a>, da Rizzygo.</footer>
+<script>
+  async function carregar() {
+    const dados = await (await fetch("/api/status")).json();
+    const caidos = dados.sites.filter((s) => s.ultimo && !s.ultimo.no_ar);
+    const geral = document.getElementById("geral");
+    geral.classList.toggle("falha", caidos.length > 0);
+    document.getElementById("geral-texto").textContent = caidos.length
+      ? caidos.length + " site(s) fora do ar agora" : "Tudo no ar";
+    const lista = document.getElementById("sites");
+    lista.innerHTML = "";
+    for (const s of dados.sites) {
+      const el = document.createElement("section");
+      el.className = "cartao";
+      const noAr = s.ultimo ? s.ultimo.no_ar : null;
+      el.innerHTML = `<div class="site-cab"><h2></h2><span class="${noAr ? "status-ok" : "status-falha"}">${noAr === null ? "sem teste ainda" : noAr ? "no ar" : "fora do ar"}</span></div>
+        <p class="numeros">Uptime 24 h: <b>${s.uptime === null ? "-" : s.uptime.toLocaleString("pt-BR")}%</b> · resposta média: <b>${s.mediaMs ?? "-"} ms</b> · último código: <b>${s.ultimo?.status ?? "-"}</b></p>
+        <div class="barras" aria-label="Uma barra por hora nas últimas 24 horas">${s.horas.map((h) => `<span class="${h}" title="${h}"></span>`).join("")}</div>
+        <div class="legenda"><span>24 h atrás</span><span>agora</span></div>`;
+      el.querySelector("h2").textContent = s.site.replace(/^https?:\/\//, "");
+      lista.append(el);
+    }
+  }
+  carregar();
+  setInterval(carregar, 60_000);
+</script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caixinha Anônima</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .garantia{background:var(--ambar-claro);border-radius:var(--raio);padding:1rem 1.1rem;margin-bottom:1rem}
+  .garantia b{display:block;margin-bottom:.2rem}
+  .local{border:2px dashed var(--ambar);border-radius:10px;padding:.6rem .8rem;color:var(--suave);font-size:.9rem;margin:.8rem 0}
+  #turnstile{margin:.8rem 0}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1 id="titulo">Caixinha Anônima</h1><span class="selo">demo · R$ 0</span><p>Sugestões sem identificação, com Turnstile, Workers e D1, no plano Free da Cloudflare.</p></div></header>
+<main class="casca">
+  <div class="garantia"><b>Ninguém sabe quem mandou.</b>A Caixinha guarda só o texto, a categoria e o dia. Não guarda nome, e-mail, IP nem horário.</div>
+  <section class="cartao">
+    <h2>Mande sua sugestão</h2>
+    <form id="form">
+      <label for="categoria">Sobre o quê?</label>
+      <select id="categoria"></select>
+      <label for="texto">Sua mensagem</label>
+      <textarea id="texto" minlength="5" maxlength="1000" required placeholder="Escreva com calma. Ninguém vai saber que foi você."></textarea>
+      <div id="turnstile"></div>
+      <button type="submit" id="enviar">Enviar sem me identificar</button>
+      <p class="msg" id="msg" role="status"></p>
+    </form>
+  </section>
+  <p style="text-align:center"><a href="/admin.html">Quem lê as sugestões entra aqui</a></p>
+</main>
+<footer class="rodape">Demo do artigo <a href="https://rizzygo.com.br/projetos-free-tier-firebase-cloudflare">Dez projetos reais que custam zero real</a>, da Rizzygo.</footer>
+<script>
+  const $ = (id) => document.getElementById(id);
+  let token = "";
+
+  async function iniciar() {
+    const cfg = await (await fetch("/api/config")).json();
+    $("titulo").textContent = cfg.titulo;
+    for (const c of cfg.categorias) $("categoria").add(new Option(c, c));
+    if (cfg.modoLocal) {
+      $("turnstile").innerHTML = '<div class="local">Modo local: o Turnstile está desligado (MODO_LOCAL=1). Em produção, o desafio aparece aqui.</div>';
+      return;
+    }
+    // Carrega o Turnstile e mostra o desafio. O callback recebe o token que o servidor vai conferir.
+    window.aoCarregarTurnstile = () => turnstile.render("#turnstile", {
+      sitekey: cfg.sitekey,
+      callback: (t) => { token = t; },
+      "expired-callback": () => { token = ""; },
+    });
+    const s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=aoCarregarTurnstile&render=explicit";
+    s.async = true;
+    document.head.append(s);
+  }
+
+  $("form").onsubmit = async (ev) => {
+    ev.preventDefault();
+    $("enviar").disabled = true;
+    $("msg").className = "msg";
+    const r = await fetch("/api/sugestoes", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ categoria: $("categoria").value, texto: $("texto").value, token }),
+    });
+    const dados = await r.json();
+    $("enviar").disabled = false;
+    if (r.ok) {
+      $("msg").textContent = "Recebido. Obrigado por contar!";
+      $("msg").classList.add("ok");
+      $("texto").value = "";
+      if (window.turnstile) turnstile.reset();
+    } else {
+      $("msg").textContent = dados.erro;
+      $("msg").classList.add("erro");
+    }
+  };
+  iniciar();
+</script>
+</body>
+</html>

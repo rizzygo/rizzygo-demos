@@ -1,0 +1,18 @@
+{
+  "name": "mural-vivo",
+  "private": true,
+  "description": "Mural de recados em tempo real com Firebase Authentication, Firestore e Hosting, no plano Spark.",
+  "scripts": {
+    "build": "esbuild src/app.js --bundle --format=esm --minify --outfile=public/app.js",
+    "dev": "npm run build && firebase emulators:start --project demo-mural-vivo",
+    "deploy": "npm run build && firebase deploy --only hosting,firestore:rules",
+    "conferir": "npm run build"
+  },
+  "dependencies": {
+    "firebase": "12.19.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.12",
+    "firebase-tools": "15.36.0"
+  }
+}
