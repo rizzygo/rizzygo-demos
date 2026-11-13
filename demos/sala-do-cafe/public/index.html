@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sala do Café</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .barra{display:flex;gap:.8rem;align-items:center;flex-wrap:wrap;justify-content:space-between;margin-bottom:1rem}
+  .presenca{font-weight:700;color:var(--suave)}
+  .presenca b{color:var(--verde)}
+  .conexao{font-size:.85rem;font-weight:700;border-radius:99px;padding:.15rem .6rem;background:var(--azul-claro);color:var(--azul)}
+  .conexao.off{background:#fde8e8;color:var(--vermelho)}
+  .quadro{display:grid;gap:1rem}
+  @media (min-width:760px){.quadro{grid-template-columns:repeat(3,1fr)}}
+  .coluna{background:var(--branco);border:1px solid var(--linha);border-top:5px solid var(--verde);border-radius:var(--raio);padding:.9rem}
+  .coluna:nth-child(2){border-top-color:var(--ambar)}.coluna:nth-child(3){border-top-color:var(--azul)}
+  .coluna h2{margin:0 0 .6rem;font-size:1.05rem}
+  .cartao-r{background:var(--fundo);border:1px solid var(--linha);border-radius:10px;padding:.6rem .7rem;margin-bottom:.5rem}
+  .cartao-r p{margin:0 0 .4rem;white-space:pre-wrap}
+  .acoes{display:flex;gap:.4rem;flex-wrap:wrap}
+  .acoes button{padding:.25rem .55rem;font-size:.85rem}
+  .nova{display:flex;gap:.4rem;margin-top:.5rem}
+  .nova input{flex:1}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1>Sala do Café</h1><span class="selo">demo · R$ 0</span><p>Retrospectiva em tempo real com Durable Objects e WebSocket, no plano Free da Cloudflare.</p></div></header>
+<main class="casca">
+  <div class="barra">
+    <div><label for="sala" style="margin:0">Sala</label><div class="linha"><input id="sala" pattern="[a-z0-9-]{3,40}"><button type="button" id="trocar" class="secundario">Entrar</button></div></div>
+    <div><span class="presenca" id="presenca">...</span> <span class="conexao off" id="conexao">desconectado</span></div>
+  </div>
+  <div class="quadro" id="quadro"></div>
+  <p class="vazio" style="margin-top:1rem">Mande o link desta página para o time. Todo mundo na mesma sala vê os cartões mudarem na hora.</p>
+</main>
+<footer class="rodape">Demo do artigo <a href="https://rizzygo.com.br/projetos-free-tier-firebase-cloudflare">Dez projetos reais que custam zero real</a>, da Rizzygo.</footer>
+<script>
+  const $ = (id) => document.getElementById(id);
+  const params = new URLSearchParams(location.search);
+  const sala = (params.get("sala") || "retro-" + Math.random().toString(36).slice(2, 7)).toLowerCase();
+  if (!params.get("sala")) history.replaceState(null, "", "?sala=" + sala);
+  $("sala").value = sala;
+  $("trocar").onclick = () => { location.search = "?sala=" + encodeURIComponent($("sala").value.trim().toLowerCase()); };
+
+  let ws, espera = 500;
+  function conectar() {
+    const protocolo = location.protocol === "https:" ? "wss:" : "ws:";
+    ws = new WebSocket(`${protocolo}//${location.host}/sala/${sala}/ws`);
+    ws.onopen = () => { espera = 500; $("conexao").textContent = "ao vivo"; $("conexao").classList.remove("off"); };
+    ws.onmessage = (ev) => desenhar(JSON.parse(ev.data));
+    ws.onclose = () => {
+      $("conexao").textContent = "reconectando...";
+      $("conexao").classList.add("off");
+      setTimeout(conectar, espera);
+      espera = Math.min(espera * 2, 10_000); // espera cada vez mais, até 10 s
+    };
+  }
+  const enviar = (m) => ws && ws.readyState === 1 && ws.send(JSON.stringify(m));
+
+  function desenhar(estado) {
+    $("presenca").innerHTML = `<b>●</b> ${estado.pessoas} ${estado.pessoas === 1 ? "pessoa" : "pessoas"} na sala`;
+    const q = $("quadro");
+    const digitando = document.activeElement && document.activeElement.dataset.coluna;
+    const rascunhos = {};
+    q.querySelectorAll("input[data-coluna]").forEach((i) => { rascunhos[i.dataset.coluna] = i.value; });
+    q.innerHTML = "";
+    for (const coluna of estado.colunas) {
+      const col = document.createElement("section");
+      col.className = "coluna";
+      col.innerHTML = "<h2></h2><div class='lista'></div><form class='nova'><input maxlength='200' placeholder='Novo cartão'><button>+</button></form>";
+      col.querySelector("h2").textContent = coluna;
+      for (const c of estado.cartoes.filter((c) => c.coluna === coluna)) {
+        const el = document.createElement("div");
+        el.className = "cartao-r";
+        el.innerHTML = "<p></p><div class='acoes'></div>";
+        el.querySelector("p").textContent = c.texto;
+        const acoes = el.querySelector(".acoes");
+        const botao = (rotulo, msg, classe) => {
+          const b = document.createElement("button");
+          b.type = "button"; b.textContent = rotulo; b.className = classe || "secundario";
+          b.onclick = () => enviar(msg); acoes.append(b);
+        };
+        botao(`👍 ${c.votos}`, { tipo: "votar", id: c.id });
+        for (const outra of estado.colunas) if (outra !== coluna) botao(`→ ${outra}`, { tipo: "mover", id: c.id, coluna: outra });
+        botao("apagar", { tipo: "apagar", id: c.id });
+        col.querySelector(".lista").append(el);
+      }
+      const input = col.querySelector("input");
+      input.dataset.coluna = coluna;
+      input.value = rascunhos[coluna] || "";
+      col.querySelector("form").onsubmit = (ev) => {
+        ev.preventDefault();
+        if (input.value.trim()) enviar({ tipo: "criar", coluna, texto: input.value });
+        input.value = "";
+        rascunhos[coluna] = "";
+      };
+      q.append(col);
+      if (digitando === coluna) input.focus();
+    }
+  }
+  conectar();
+</script>
+</body>
+</html>

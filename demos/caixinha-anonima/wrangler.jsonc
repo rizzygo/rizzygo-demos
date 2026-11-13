@@ -1,0 +1,15 @@
+// Configuração do Worker. Troque o database_id e a TURNSTILE_SITEKEY pelos seus (veja o README).
+{
+  "name": "caixinha-anonima",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "dev": { "port": 8789 },
+  "assets": { "directory": "./public" },
+  "d1_databases": [{ "binding": "DB", "database_name": "caixinha-anonima", "database_id": "troque-pelo-id-do-d1" }],
+  "vars": {
+    // A sitekey é pública (vai para o navegador). A chave secreta vai com: npx wrangler secret put TURNSTILE_SECRET
+    // Esta é a sitekey de teste da Cloudflare, que sempre passa. Troque pela sua antes de publicar.
+    "TURNSTILE_SITEKEY": "1x00000000000000000000AA",
+    "TITULO": "Caixinha da turma"
+  }
+}

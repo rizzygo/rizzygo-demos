@@ -1,0 +1,25 @@
+rules_version = '2';
+// Regras do Mural Vivo. Elas rodam no servidor do Firebase: a página não consegue pular.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /recados/{id} {
+      // Só quem entrou lê o mural.
+      allow read: if request.auth != null;
+
+      // Criar: só em seu próprio nome, texto de 1 a 280 caracteres, com a hora do servidor.
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['texto', 'autorId', 'autorNome', 'criadoEm'])
+        && request.resource.data.autorId == request.auth.uid
+        && request.resource.data.texto is string
+        && request.resource.data.texto.size() > 0
+        && request.resource.data.texto.size() <= 280
+        && request.resource.data.autorNome is string
+        && request.resource.data.autorNome.size() <= 40
+        && request.resource.data.criadoEm == request.time;
+
+      // Ninguém edita. Só quem escreveu apaga.
+      allow update: if false;
+      allow delete: if request.auth != null && resource.data.autorId == request.auth.uid;
+    }
+  }
+}

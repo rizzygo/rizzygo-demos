@@ -1,0 +1,6 @@
+# Copie para .dev.vars (o git ignora esse arquivo). Em produção, use wrangler secret put para cada um.
+CHAVE_ADMIN=troque-esta-chave
+# Chave secreta de teste da Cloudflare, que sempre passa. Em produção, use a sua.
+TURNSTILE_SECRET=1x0000000000000000000000000000000AA
+# Só no seu computador: 1 pula a conferência do Turnstile (útil sem internet). Nunca use em produção.
+MODO_LOCAL=0

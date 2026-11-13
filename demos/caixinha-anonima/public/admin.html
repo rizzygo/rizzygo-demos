@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Caixinha Anônima: leitura</title>
+<link rel="stylesheet" href="/estilo.css">
+<style>
+  .sugestao{border-left:4px solid var(--azul);padding:.6rem .9rem;margin:.7rem 0;background:var(--fundo);border-radius:0 10px 10px 0}
+  .sugestao .meta{color:var(--suave);font-size:.85rem;font-weight:600}
+  .sugestao p{margin:.25rem 0 0;white-space:pre-wrap}
+  .Problema{border-left-color:var(--vermelho)}.Elogio{border-left-color:var(--verde)}.Ideia{border-left-color:var(--ambar)}
+</style>
+</head>
+<body>
+<header class="topo"><div class="casca"><h1>Caixinha Anônima</h1><span class="selo">leitura</span><p>Só quem tem a CHAVE_ADMIN vê as sugestões.</p></div></header>
+<main class="casca">
+  <section class="cartao">
+    <div class="linha">
+      <div><label for="chave">CHAVE_ADMIN</label><input id="chave" type="password" autocomplete="off"></div>
+      <button type="button" id="entrar">Ver sugestões</button>
+    </div>
+    <p class="msg erro" id="msg" role="status"></p>
+  </section>
+  <section class="cartao"><h2>Sugestões recebidas</h2><div id="lista"><p class="vazio">Use a chave para ver.</p></div></section>
+</main>
+<script>
+  const $ = (id) => document.getElementById(id);
+  $("chave").value = sessionStorage.getItem("caixinha-chave") || "";
+  async function carregar() {
+    const chave = $("chave").value.trim();
+    sessionStorage.setItem("caixinha-chave", chave);
+    const r = await fetch("/api/sugestoes", { headers: { Authorization: "Bearer " + chave } });
+    const dados = await r.json();
+    $("msg").textContent = r.ok ? "" : dados.erro;
+    if (!r.ok) return;
+    $("lista").innerHTML = dados.sugestoes.length ? "" : '<p class="vazio">Nenhuma sugestão ainda.</p>';
+    for (const s of dados.sugestoes) {
+      const el = document.createElement("div");
+      el.className = "sugestao " + s.categoria;
+      el.innerHTML = '<span class="meta"></span><p></p>';
+      el.querySelector(".meta").textContent = s.categoria + " · " + s.dia.split("-").reverse().join("/");
+      el.querySelector("p").textContent = s.texto;
+      $("lista").append(el);
+    }
+  }
+  $("entrar").onclick = carregar;
+  if ($("chave").value) carregar();
+</script>
+</body>
+</html>
